@@ -255,6 +255,21 @@ mov r8d,dword[y1]	; coordonnée source en y
 mov r9d,dword[x2]	; coordonnée destination en x
 push qword[y2]		; coordonnée destination en y
 call XDrawLine
+; ###########################
+
+mov dword[x1],100
+mov dword[y1],100
+mov dword[x2],300
+mov dword[y2],300
+; dessin de la ligne 1
+mov rdi,qword[display_name]
+mov rsi,qword[window]
+mov rdx,qword[gc]
+mov ecx,dword[x1]	; coordonnée source en x
+mov r8d,dword[y1]	; coordonnée source en y
+mov r9d,dword[x2]	; coordonnée destination en x
+push qword[y2]		; coordonnée destination en y
+call XDrawLine
 
 ; ############################
 ; # FIN DE LA ZONE DE DESSIN #
