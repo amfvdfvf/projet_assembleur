@@ -315,35 +315,52 @@ pop rax
 
 
 for_loop:
-    cmp byte[i1], 4
+    ; Initialiser le compteur
+    xor r10d, r10d           ; r10d = 0 (index du tableau)
+    
+boucle_carre:
+    cmp byte[i1], 4          ; Vérifier si on a dessiné 4 côtés
     jge fin
-
-    movzx eax, r11w
+    
+    ; Charger le point de départ (x1, y1)
+    movzx eax, word [tabx + 2*r10]
     mov [x1], eax
-
-    movzx eax, word [taby + 2*r10d]
+    
+    movzx eax, word [taby + 2*r10]
     mov [y1], eax
-
-    inc r10
-
+    
+    ; Calculer l'index du point suivant (avec retour au début si nécessaire)
+    inc r10d
+    cmp r10d, 4              ; Si on dépasse le dernier point
+    jl pas_reset
+    xor r10d, r10d           ; Revenir au premier point (pour fermer le carré)
+    
+pas_reset:
+    ; Charger le point d'arrivée (x2, y2)
     movzx eax, word [tabx + 2*r10]
     mov [x2], eax
-
+    
     movzx eax, word [taby + 2*r10]
     mov [y2], eax
-
-    mov rdi,qword[display_name]
-    mov rsi,qword[window]
-    mov rdx,qword[gc]
-    mov ecx,dword[x1]
-    mov r8d,dword[y1]
-    mov r9d,dword[x2]
+    
+    ; Dessiner la ligne
+    mov rdi, qword[display_name]
+    mov rsi, qword[window]
+    mov rdx, qword[gc]
+    mov ecx, dword[x1]
+    mov r8d, dword[y1]
+    mov r9d, dword[x2]
     push qword[y2]
     call XDrawLine
+    pop rax                  ; Nettoyer la pile
+    
+    ; Incrémenter le compteur de lignes
     inc byte[i1]
-    jmp for_loop
+    jmp boucle_carre
 
 fin:
+    ; Réinitialiser i1 pour une prochaine utilisation éventuelle
+    mov byte[i1], 0
 
 
 ; ############################
@@ -364,4 +381,3 @@ closeDisplay:
     call    XCloseDisplay
     xor	    rdi,rdi
     call    exit
-	
