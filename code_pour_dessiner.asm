@@ -61,6 +61,9 @@ y2:	dd	0
 angle:	dd	0
 demiangle:	dd	180
 
+tabx: dw 100, 300, 300, 100
+taby: dw 100, 100, 300, 300
+i1: db 0
 section .text
 
 calculs_trigo:		; cette fonction précalcule les cosinus et sinus des angles de 0 à 360°
@@ -193,7 +196,7 @@ mov r8d,dword[y1]
 mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
-add rsp, 8              ; 
+pop rax              ; 
 
 ;couleur de la ligne 2
 mov rdi,qword[display_name]
@@ -212,7 +215,7 @@ mov r8d,dword[y1]
 mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
-add rsp, 8              ; 
+pop rax              ; 
 
 ;couleur de la ligne 3
 mov rdi,qword[display_name]
@@ -231,7 +234,7 @@ mov r8d,dword[y1]
 mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
-add rsp, 8              ; 
+pop rax              ; 
 
 ;couleur de la ligne 4
 mov rdi,qword[display_name]
@@ -250,13 +253,13 @@ mov r8d,dword[y1]
 mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
-add rsp, 8              ; 
+pop rax              ; 
 
 ; Ligne 5
 mov dword[x1],100
 mov dword[y1],100
 mov dword[x2],300
-mov dword[y2],300
+mov dword[y2],100
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
@@ -265,7 +268,83 @@ mov r8d,dword[y1]
 mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
-add rsp, 8              ; 
+pop rax 
+
+mov dword[x1],100
+mov dword[y1],100
+mov dword[x2],150
+mov dword[y2],150
+mov rdi,qword[display_name]
+mov rsi,qword[window]
+mov rdx,qword[gc]
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
+call XDrawLine
+pop rax 
+
+mov dword[x1],300
+mov dword[y1],100
+mov dword[x2],350
+mov dword[y2],150
+mov rdi,qword[display_name]
+mov rsi,qword[window]
+mov rdx,qword[gc]
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
+call XDrawLine
+pop rax                       ; 
+
+mov dword[x1],150
+mov dword[y1],150
+mov dword[x2],350
+mov dword[y2],150
+mov rdi,qword[display_name]
+mov rsi,qword[window]
+mov rdx,qword[gc]
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
+call XDrawLine
+pop rax
+
+
+
+for_loop:
+    cmp byte[i1], 4
+    jge fin
+
+    movzx eax, r11w
+    mov [x1], eax
+
+    movzx eax, word [taby + 2*r10d]
+    mov [y1], eax
+
+    inc r10
+
+    movzx eax, word [tabx + 2*r10]
+    mov [x2], eax
+
+    movzx eax, word [taby + 2*r10]
+    mov [y2], eax
+
+    mov rdi,qword[display_name]
+    mov rsi,qword[window]
+    mov rdx,qword[gc]
+    mov ecx,dword[x1]
+    mov r8d,dword[y1]
+    mov r9d,dword[x2]
+    push qword[y2]
+    call XDrawLine
+    inc byte[i1]
+    jmp for_loop
+
+fin:
+
 
 ; ############################
 ; # FIN DE LA ZONE DE DESSIN #
