@@ -179,97 +179,93 @@ dessin:
 ;couleur de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
-mov edx,0xFF0000	; Couleur du crayon ; rouge
+mov edx,0xFF0000
 call XSetForeground
-; coordonnées de la ligne 1
 mov dword[x1],50
 mov dword[y1],50
 mov dword[x2],200
 mov dword[y2],350
-; dessin de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
 call XDrawLine
+add rsp, 8              ; 
 
 ;couleur de la ligne 2
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
-mov edx,0x00FF00	; Couleur du crayon ; vert
+mov edx,0x00FF00
 call XSetForeground
-; coordonnées de la ligne 2
 mov dword[x1],50
 mov dword[y1],350
 mov dword[x2],200
 mov dword[y2],50
-; dessin de la ligne 2
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
 call XDrawLine
+add rsp, 8              ; 
 
 ;couleur de la ligne 3
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
-mov edx,0x00FFFF	; Couleur du crayon ; bleu
+mov edx,0x00FFFF
 call XSetForeground
-; coordonnées de la ligne 3	
 mov dword[x1],275
 mov dword[y1],50
 mov dword[x2],275
 mov dword[y2],350
-; dessin de la ligne 3
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
 call XDrawLine
+add rsp, 8              ; 
 
 ;couleur de la ligne 4
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
-mov edx,0xFF00FF	; Couleur du crayon ; violet
+mov edx,0xFF00FF
 call XSetForeground
-; coordonnées de la ligne 4	
 mov dword[x1],350
 mov dword[y1],50
 mov dword[x2],350
 mov dword[y2],350
-; dessin de la ligne 4
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
 call XDrawLine
-; ###########################
+add rsp, 8              ; 
 
+; Ligne 5
 mov dword[x1],100
 mov dword[y1],100
 mov dword[x2],300
 mov dword[y2],300
-; dessin de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
+mov ecx,dword[x1]
+mov r8d,dword[y1]
+mov r9d,dword[x2]
+push qword[y2]
 call XDrawLine
+add rsp, 8              ; 
 
 ; ############################
 ; # FIN DE LA ZONE DE DESSIN #
