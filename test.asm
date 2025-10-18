@@ -95,7 +95,16 @@ faces:
     dd 1,7,0,1
     dd 2,1,0,2
     dd 4,5,3,4
-    dd 4,6,5,4
+    dd 4,6,5,5
+
+tab2d: times 24 dd 0
+
+df: dd 256.0
+zoff: dd 256.0
+xoff: dd 400.0
+yoff: dd 300.0
+
+affxy: db "(%hd)",0,10
 
 tabx: times 12 dd 1
 taby: times 12 dd 1
@@ -348,77 +357,126 @@ push qword[y2]
 call XDrawLine
 pop rax
 
+; test boucle 3d to 2d 
 
 
-for_loop:
-    ; Initialiser le compteur
-    xor r10d, r10d           ; r10d = 0 (index du tableau)
+mov rsi, sommets ; tab 3d
+mov rdi, tab2d ; tab resutl 2d
+mov rcx,12 ; conteur 12 point
+
+loop_1:
     
-boucle_carre:
-    cmp byte[i1], 4          ; Vérifier si on a dessiné 4 côtés
+    cmp rcx, 0
+    jle etape_aff
+
+    movss xmm0, [rsi]
+    movss xmm1, [rsi+4]
+    movss xmm2, [rsi+8]
+
+    ; charger les valeur
+
+    movss xmm3, [df] ; df
+    movss xmm4, [zoff] ;zoff
+    movss xmm5, [xoff];xoff
+    movss xmm6, [yoff];yoff
+    ; pour x
+    addss xmm2, xmm4
+
+    mulss xmm0, xmm3
+
+    divss xmm0, xmm2
+
+    addss xmm0, xmm5
+    ; pour y 
+    addss xmm2, xmm4 ; redondance pas utilme mais pour mieux comprendre si
+
+    mulss xmm1, xmm3
+
+    divss xmm1, xmm2
+
+    addss xmm1, xmm6
+
+    movss [rdi], xmm0 ; tab2d = x
+    movss [rdi+4], xmm1 ; tab2d = y
+
+    add rsi, 12
+    add rdi, 8
+
+    dec rcx
+
+    jmp loop_1
+
+etape_aff:
+;faire le code pour affihcer le patangoen avec les coodonée en 2d stp
+
+;tesssssssssssssssssssssssssssssssssssssssss
+
+mov r15, 0
+
+loop_face:
+    cmp r15, 20
     jge fin
     
-    ; Charger le point de départ (x1, y1)
-    movzx eax, word [tabx + 2*r10]
-    mov [x1], eax
-    
-    movzx eax, word [taby + 2*r10]
-    mov [y1], eax
-    
-    ; Calculer l'index du point suivant (avec retour au début si nécessaire)
-    inc r10d
-    cmp r10d, 4              ; Si on dépasse le dernier point
-    jl pas_reset
-    xor r10d, r10d           ; Revenir au premier point (pour fermer le carré)
-    
-pas_reset:
-    ; Charger le point d'arrivée (x2, y2)
-    movzx eax, word [tabx + 2*r10]
-    mov [x2], eax
-    
-    movzx eax, word [taby + 2*r10]
-    mov [y2], eax
-    
-    ; Dessiner la ligne
-    mov rdi, qword[display_name]
-    mov rsi, qword[window]
-    mov rdx, qword[gc]
-    mov ecx, dword[x1]
-    mov r8d, dword[y1]
-    mov r9d, dword[x2]
+    ; calcul adresse faces
+    mov rax, r15
+    shl rax, 4
+    add rax, faces
+
+    mov r10, rax
+    mov r11, 0
+
+loop_aff_trait:
+    cmp r11, 4
+    jge loop_face
+ 
+
+    ;recup point x et y 
+    movss xmm0, [tab2d + r10 * 4] ; x
+    movss xmm1, [tab2d + r10 * 4 + 4] ; y
+
+    movss xmm2, [tab2d + r10 * 4 + 8] ; x2
+    movss xmm3, [tab2d + r10 * 4 + 12] ; y2
+
+    ; convertier les points
+
+    cvttss2si ecx, xmm0 
+    cvttss2si r8d, xmm1
+    cvttss2si r9d, xmm2
+    cvttss2si rax, xmm3
+
+    ;affichage
+    mov rdi,qword[display_name]
+    mov rsi,qword[window]
+    mov rdx,qword[gc]
+    mov ecx,dword[x1]
+    mov r8d,dword[y1]
+    mov r9d,dword[x2]
     push qword[y2]
     call XDrawLine
-    pop rax                  ; Nettoyer la pile
-    
-    ; Incrémenter le compteur de lignes
-    inc byte[i1]
-    jmp boucle_carre
+    pop rax
+
+    inc r11  
+    jmp loop_aff_trait
+
+
+;tessssssssssssssssssssssssssssssssssssssss
+
+
+mov rcx, 12
+
+llop_aff_test:
+    cmp rcx, 0
+    jl fin
+    mov rdi, affxy
+    mov rsi, rcx
+    mov rax, 0
+    call printf
+    dec rcx
+    jmp llop_aff_test
+
 
 fin:
-    ; Réinitialiser i1 pour une prochaine utilisation éventuelle
-    mov byte[i1], 0
-
-; Passage des points 3d a 2d ####
-; ################################
-
 mov esi,0 
-
-loop_3d_to_2d:
-    cmp esi, 12 
-    jge fin_3d_to_2d
-    //charger le sommet
-    
-
-    // aplique formule  pour x
-
-    // aplique formule pour y
-
-    //incrementer esi et jmp to loop_3d_to_2d
-
-fin_3d_to_2d:
-; ############################
-; # FIN DE LA ZONE DE DESSIN #
-; ############################
 jmp flush
 
 flush:

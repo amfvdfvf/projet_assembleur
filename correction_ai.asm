@@ -95,7 +95,16 @@ faces:
     dd 1,7,0,1
     dd 2,1,0,2
     dd 4,5,3,4
-    dd 4,6,5,4
+    dd 4,6,5,5
+
+tab2d: times 24 dd 0
+
+df: dd 400.0
+zoff: dd 400.0
+xoff: dd 200.0
+yoff: dd 200.0
+
+affxy: db "(%hd)",0,10
 
 tabx: times 12 dd 1
 taby: times 12 dd 1
@@ -348,77 +357,138 @@ push qword[y2]
 call XDrawLine
 pop rax
 
+; test boucle 3d to 2d 
 
 
-for_loop:
-    ; Initialiser le compteur
-    xor r10d, r10d           ; r10d = 0 (index du tableau)
+mov rsi, sommets ; tab 3d
+mov rdi, tab2d 
+mov rcx,12 
+
+loop_1:
     
-boucle_carre:
-    cmp byte[i1], 4          ; Vérifier si on a dessiné 4 côtés
+    cmp rcx, 0
+    jle etape_aff
+
+    movss xmm0, [rsi]      ; X
+    movss xmm1, [rsi+4]    ; Y
+    movss xmm2, [rsi+8]    ; Z
+
+    ; charger les valeurs
+    movss xmm3, [df]        
+    movss xmm4, [zoff]     
+    movss xmm5, [xoff]    
+    movss xmm6, [yoff]    
+
+    movss xmm7, xmm2     
+    addss xmm7, xmm4       ; Z + zoff
+    mulss xmm0, xmm3       ; X * df
+    divss xmm0, xmm7       ; (X * df) / (Z + zoff)
+    addss xmm0, xmm5       ; + xoff
+    
+    ; Pour y_screen :
+    mulss xmm1, xmm3       ; Y * df
+    divss xmm1, xmm7       ; (Y * df) / (Z + zoff)
+    addss xmm1, xmm6       ; + yoff
+
+    movss [rdi], xmm0     
+    movss [rdi+4], xmm1    
+
+    add rsi, 12
+    add rdi, 8
+
+    dec rcx
+
+    jmp loop_1
+
+etape_aff:
+; Affichage des faces du dodécaèdre
+; Chaque face a 4 sommets : on trace les 4 arêtes (lignes entre points consécutifs)
+
+mov r12, 0              ; compteur de faces (0 à 19)
+
+boucle_faces:
+    cmp r12, 20         ; 20 faces au total
     jge fin
+
+    ; Calculer l'offset dans le tableau faces (chaque face = 4 indices de 4 octets = 16 octets)
+    mov rax, r12
+    shl rax, 4          ; multiplier par 16 (4 indices * 4 octets)
+    lea rbx, [faces + rax]  ; rbx pointe sur la face actuelle
+
+    ; Récupérer les 4 indices de sommets de cette face
+    mov r8d, [rbx]      ; sommet 0
+    mov r9d, [rbx+4]    ; sommet 1
+    mov r10d, [rbx+8]   ; sommet 2
+    mov r11d, [rbx+12]  ; sommet 3
+
+    ; Tracer ligne entre sommet 0 et sommet 1
+    call tracer_ligne_entre_sommets
+
+    ; Tracer ligne entre sommet 1 et sommet 2
+    mov r8d, r9d
+    mov r9d, r10d
+    call tracer_ligne_entre_sommets
+
+    ; Tracer ligne entre sommet 2 et sommet 3
+    mov r8d, r10d
+    mov r9d, r11d
+    call tracer_ligne_entre_sommets
+
+    ; Tracer ligne entre sommet 3 et sommet 0 (fermer la face)
+    mov r8d, r11d
+    mov r9d, [rbx]      ; retour au sommet 0
+    call tracer_ligne_entre_sommets
+
+    inc r12
+    jmp boucle_faces
+
+tracer_ligne_entre_sommets:
+    ; r8d = indice du premier sommet
+    ; r9d = indice du deuxième sommet
+    ; Récupère les coordonnées 2D et trace la ligne
     
-    ; Charger le point de départ (x1, y1)
-    movzx eax, word [tabx + 2*r10]
-    mov [x1], eax
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
     
-    movzx eax, word [taby + 2*r10]
-    mov [y1], eax
+    ; Coordonnées du premier point
+    mov rax, r8
+    shl rax, 3          ; * 8 (chaque point 2D = 2 floats de 4 octets)
+    movss xmm0, [tab2d + rax]       ; x1
+    movss xmm1, [tab2d + rax + 4]   ; y1
     
-    ; Calculer l'index du point suivant (avec retour au début si nécessaire)
-    inc r10d
-    cmp r10d, 4              ; Si on dépasse le dernier point
-    jl pas_reset
-    xor r10d, r10d           ; Revenir au premier point (pour fermer le carré)
+    ; Coordonnées du deuxième point
+    mov rax, r9
+    shl rax, 3
+    movss xmm2, [tab2d + rax]       ; x2
+    movss xmm3, [tab2d + rax + 4]   ; y2
     
-pas_reset:
-    ; Charger le point d'arrivée (x2, y2)
-    movzx eax, word [tabx + 2*r10]
-    mov [x2], eax
+    ; Convertir en entiers
+    cvttss2si ecx, xmm0   ; x1
+    cvttss2si r8d, xmm1   ; y1
+    cvttss2si r9d, xmm2   ; x2
+    cvttss2si eax, xmm3   ; y2
     
-    movzx eax, word [taby + 2*r10]
-    mov [y2], eax
-    
-    ; Dessiner la ligne
+    ; Appeler XDrawLine
     mov rdi, qword[display_name]
     mov rsi, qword[window]
     mov rdx, qword[gc]
-    mov ecx, dword[x1]
-    mov r8d, dword[y1]
-    mov r9d, dword[x2]
-    push qword[y2]
+    push rax
     call XDrawLine
-    pop rax                  ; Nettoyer la pile
+    add rsp, 8
     
-    ; Incrémenter le compteur de lignes
-    inc byte[i1]
-    jmp boucle_carre
+    pop r12
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    ret
+
 
 fin:
-    ; Réinitialiser i1 pour une prochaine utilisation éventuelle
-    mov byte[i1], 0
-
-; Passage des points 3d a 2d ####
-; ################################
-
 mov esi,0 
-
-loop_3d_to_2d:
-    cmp esi, 12 
-    jge fin_3d_to_2d
-    //charger le sommet
-    
-
-    // aplique formule  pour x
-
-    // aplique formule pour y
-
-    //incrementer esi et jmp to loop_3d_to_2d
-
-fin_3d_to_2d:
-; ############################
-; # FIN DE LA ZONE DE DESSIN #
-; ############################
 jmp flush
 
 flush:
