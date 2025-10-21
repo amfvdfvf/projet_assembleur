@@ -109,6 +109,18 @@ affxy: db "(%hd)",0,10
 tabx: times 12 dd 1
 taby: times 12 dd 1
 
+x10 : dd 0
+y10 : dd 0
+
+x12 : dd 0
+y12 : dd 0
+
+x3 : dd 0
+y3 : dd 0
+
+x10y12 : dd 0
+y10X12 : dd 0
+
 section .text
 
 calculs_trigo:		; cette fonction précalcule les cosinus et sinus des angles de 0 à 360°
@@ -421,7 +433,6 @@ boucle_faces:
     mov r10d, [rbx+8]   ; sommet 2
     mov r11d, [rbx+12]  ; sommet 3
 
-    ; Tracer ligne entre sommet 0 et sommet 1
     call tracer_ligne_entre_sommets
 
     ; Tracer ligne entre sommet 1 et sommet 2
@@ -470,6 +481,61 @@ tracer_ligne_entre_sommets:
     cvttss2si r8d, xmm1   ; y1
     cvttss2si r9d, xmm2   ; x2
     cvttss2si eax, xmm3   ; y2
+    
+    ; avant il faut proen les point x3 et y3
+    ;recup face r10d mais dasn notre codeil faut faire un plus
+    mov rax, r10
+    shl rax, 3
+    movss xmm4, [tab2d + rax]       ; x3
+    movss xmm5, [tab2d + rax + 4]   ; y3
+
+    cvttss2si word[x3], xmm4   ; x3
+    cvttss2si word[y3], [xmm5]   ; y3
+
+    ; x10 = x0-x1
+    mov r15, rcx
+    sub r15, r9
+    mov word[x10], r15
+
+    ; y10 = y0-y1
+    mov r15, r8
+    sub r15, rax
+    mov word[y10], r15
+
+    ;x12 = x2-x1
+    mov r15, word[x3]
+    sub r15, r9
+    mov word[x12], r15
+
+    ;y12 = y2-y1
+    mov r15, word[y3]
+    sub r15, rax
+    mov word[y12], r15
+
+    ;(x10*y12)-(y10*x12)
+
+    ;x10*y12
+    movsx r15, word[x10]
+    movsx r14, word[y12]
+    imul r15, r14
+    mov word[x10y12]
+
+    ;y10*x12
+    movsx r15, word[y10]
+    movsx r14, word[x12]
+    imul r15, r14
+    mov word[y10X12]
+
+    ;faire la soustrzction
+
+    mov r14, word[y10X12]
+    mov r15, word[x10y12]
+    sub r14, r15
+
+    cmp r14, 0
+    jle jump_a_la_boucle_for
+
+    ; ecrire ici le code pour les face cacher
     
     ; Appeler XDrawLine
     mov rdi, qword[display_name]
