@@ -1,0 +1,6 @@
+esgi@debianASM:~/Bureau/projet_assembleur-1$ compile64 test_future.asm 
+Assemblage OK
+Création de l'exécutable
+Fichier exécutable 'test_future' créé
+esgi@debianASM:~/Bureau/projet_assembleur-1$ ./test_future Erreur de segmentation (core dumped)
+esgi@debianASM:~/Bureau/projet_assembleur-1$ 

@@ -58,6 +58,19 @@ x2:	dd	0
 y1:	dd	0
 y2:	dd	0
 
+x10 : dd 0
+y10 : dd 0
+
+x12 : dd 0
+y12 : dd 0
+
+x3 : dd 0
+y3 : dd 0
+
+x10y12 : dd 0
+y10X12 : dd 0
+
+
 angle:	dd	0
 demiangle:	dd	180
 
@@ -225,95 +238,13 @@ boucle: ; Boucle de gestion des événements
 dessin:
 
 ;couleur de la ligne 1
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0xFF0000
-call XSetForeground
-mov dword[x1],50
-mov dword[y1],50
-mov dword[x2],200
-mov dword[y2],350
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax              ; 
-
-;couleur de la ligne 2
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0x00FF00
-call XSetForeground
-mov dword[x1],50
-mov dword[y1],350
-mov dword[x2],200
-mov dword[y2],50
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax              ; 
+     ; 
 
 ;couleur de la ligne 3
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
 mov edx,0x00FFFF
 call XSetForeground
-mov dword[x1],275
-mov dword[y1],50
-mov dword[x2],275
-mov dword[y2],350
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax              ; 
-
-;couleur de la ligne 4
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0xFF00FF
-call XSetForeground
-mov dword[x1],350
-mov dword[y1],50
-mov dword[x2],350
-mov dword[y2],350
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax              ; 
-
-; Ligne 5
-mov dword[x1],100
-mov dword[y1],100
-mov dword[x2],300
-mov dword[y2],100
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax 
 
 mov dword[x1],100
 mov dword[y1],100
@@ -328,34 +259,8 @@ mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
 pop rax 
+                     ; 
 
-mov dword[x1],300
-mov dword[y1],100
-mov dword[x2],350
-mov dword[y2],150
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax                       ; 
-
-mov dword[x1],150
-mov dword[y1],150
-mov dword[x2],350
-mov dword[y2],150
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]
-mov r8d,dword[y1]
-mov r9d,dword[x2]
-push qword[y2]
-call XDrawLine
-pop rax
 
 ; Boucle 3d to 2d 
 
@@ -417,12 +322,49 @@ xor r13d, r13d                 ; face index = 0
 for_loop_aff1:
     cmp r13d, 20
     jge ici
-    ; base address of current face: faces + (r13*16) bytes (4 dwords)
+
+    ; r10 = adresse base de la face courante (4 dwords)
     mov     r10, faces
     mov     eax, r13d
     imul    rax, 16
     add     r10, rax
 
+    ; Back-face culling calculé une fois par face, avec v0,v1,v2 projetés
+    mov     eax, dword [r10]         ; v0
+    imul    rax, 8
+    movss   xmm0, dword [tab2d + rax]       ; x0
+    movss   xmm1, dword [tab2d + rax + 4]   ; y0
+
+    mov     ecx, dword [r10+4]       ; v1
+    imul    rcx, 8
+    movss   xmm2, dword [tab2d + rcx]       ; x1
+    movss   xmm3, dword [tab2d + rcx + 4]   ; y1
+
+    mov     edx, dword [r10+8]       ; v2
+    imul    rdx, 8
+    movss   xmm4, dword [tab2d + rdx]       ; x2
+    movss   xmm5, dword [tab2d + rdx + 4]   ; y2
+
+    ; cross = (x1-x0)*(y2-y0) - (y1-y0)*(x2-x0)
+    movaps  xmm6, xmm2
+    subss   xmm6, xmm0
+    movaps  xmm7, xmm3
+    subss   xmm7, xmm1
+    movaps  xmm2, xmm4
+    subss   xmm2, xmm0
+    movaps  xmm3, xmm5
+    subss   xmm3, xmm1
+
+    movaps  xmm4, xmm6
+    mulss   xmm4, xmm3
+    movaps  xmm5, xmm7
+    mulss   xmm5, xmm2
+    subss   xmm4, xmm5
+    xorps   xmm5, xmm5 
+    comiss  xmm4, xmm5
+    jbe     next_face            
+
+    ; Face visible: boucler sur les 4 arêtes
     xor r12d, r12d             ; edge index 0..3
 for_loop_aff2:
     cmp r12d, 4
@@ -437,25 +379,25 @@ for_loop_aff2:
     and     eax, 3
     mov     r14d, dword [r10 + rax*4]
 
-    ; charger x,y des 2 sommets projetés: tab2d a un stride de 8 octets par point (x,y)
+    ; lire coords projetées
     movss   xmm0, dword [tab2d + r11*8]       ; x1
     movss   xmm1, dword [tab2d + r11*8 + 4]   ; y1
     movss   xmm2, dword [tab2d + r14*8]       ; x2
     movss   xmm3, dword [tab2d + r14*8 + 4]   ; y2
 
-    ; convert float -> int
-    cvttss2si ecx, xmm0       ; x1 -> ecx
-    cvttss2si r8d, xmm1       ; y1 -> r8d
-    cvttss2si r9d, xmm2       ; x2 -> r9d
-    cvttss2si eax, xmm3       ; y2 -> eax (sera poussé)
+    ; floats -> ints
+    cvttss2si ecx, xmm0       ; x1
+    cvttss2si r8d, xmm1       ; y1
+    cvttss2si r9d, xmm2       ; x2
+    cvttss2si r15d, xmm3      ; y2 (ne pas écraser r10 qui pointe la face)
 
-    ; tracer le trait: XDrawLine(display, window, gc, x1, y1, x2, y2)
-    mov rdi, qword [display_name]
-    mov rsi, qword [window]
-    mov rdx, qword [gc]
-    push rax                   ; y2 (7ème argument)
-    call XDrawLine
-    pop rax
+    ; appel XDrawLine(display, window, gc, x1, y1, x2, y2)
+    mov     rdi, qword [display_name]
+    mov     rsi, qword [window]
+    mov     rdx, qword [gc]
+    push    r15                ; y2 (7e arg sur la pile)
+    call    XDrawLine
+    add     rsp, 8
 
     inc r12d
     jmp for_loop_aff2

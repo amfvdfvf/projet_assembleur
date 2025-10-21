@@ -518,7 +518,7 @@ tracer_ligne_entre_sommets:
     movsx r15, word[x10]
     movsx r14, word[y12]
     imul r15, r14
-    mov word[x10y12]
+    mov word[x10y12], r15
 
     ;y10*x12
     movsx r15, word[y10]
@@ -533,7 +533,7 @@ tracer_ligne_entre_sommets:
     sub r14, r15
 
     cmp r14, 0
-    jle jump_a_la_boucle_for
+    jle tampon_2
 
     ; ecrire ici le code pour les face cacher
     
@@ -552,6 +552,10 @@ tracer_ligne_entre_sommets:
     pop r8
     ret
 
+
+tampon_2:
+    inc r12
+    jmp boucle_faces
 
 fin:
 mov esi,0 
