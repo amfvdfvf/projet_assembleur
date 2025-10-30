@@ -32,6 +32,9 @@ extern exit
 %define BYTE	1
 %define	LARGEUR 400	; largeur en pixels de la fenêtre
 %define HAUTEUR 400	; hauteur en pixels de la fenêtre
+%define ANGLEY 10
+%define ANGLEZ 20
+%define ANGLEX 30
 
 global main
 
@@ -49,7 +52,10 @@ cosinus:	resd	360
 sinus:	resd	360
 
 
+
 section .data
+
+phrase : db "cosinus12=%f",0,10
 
 event:		times	24 dq 0
 
@@ -235,6 +241,9 @@ boucle: ; Boucle de gestion des événements
 ;#########################################
 ;#		DEBUT DE LA ZONE DE DESSIN		 #
 ;#########################################
+
+
+
 dessin:
 
 ;couleur de la ligne 1
@@ -259,12 +268,89 @@ mov r9d,dword[x2]
 push qword[y2]
 call XDrawLine
 pop rax 
-                     ; 
 
+movss xmm8,  dword [cosinus + ANGLEX*DWORD]
+movss xmm9,  dword [sinus   + ANGLEX*DWORD]
+movss xmm10, dword [cosinus + ANGLEY*DWORD]
+movss xmm11, dword [sinus   + ANGLEY*DWORD]
+movss xmm12, dword [cosinus + ANGLEZ*DWORD]
+movss xmm13, dword [sinus   + ANGLEZ*DWORD]
+
+mov rsi, sommets     
+mov rcx, 12     
+
+for_loop_rotation:
+    test rcx, rcx
+    jle ici_v2
+
+    movss xmm0, dword [rsi]      ; x
+    movss xmm1, dword [rsi+4]    ; y
+    movss xmm2, dword [rsi+8]    ; z
+
+    ; y' = y*cx - z*sx
+    ; z' = y*sx + z*cx
+    movss xmm3, xmm1             ; y
+    mulss xmm3, xmm8             ; y*cx
+    movss xmm4, xmm2             ; z
+    mulss xmm4, xmm9             ; z*sx
+    movss xmm5, xmm1             ; y
+    mulss xmm5, xmm9             ; y*sx
+    movss xmm6, xmm2             ; z
+    mulss xmm6, xmm8             ; z*cx
+    subss xmm3, xmm4             ; y'
+    addss xmm5, xmm6             ; z'
+
+    movss xmm1, xmm3             ; y = y'
+    movss xmm2, xmm5             ; z = z'
+
+    ; x' = x*cy + z*sy
+    ; z' = -x*sy + z*cy  == z*cy - x*sy
+    movss xmm3, xmm0
+    mulss xmm3, xmm10            ; x*cy
+    movss xmm4, xmm2
+    mulss xmm4, xmm11            ; z*sy
+    addss xmm3, xmm4             ; x'
+
+    movss xmm5, xmm0
+    mulss xmm5, xmm11            ; x*sy
+    movss xmm6, xmm2
+    mulss xmm6, xmm10            ; z*cy
+    subss xmm6, xmm5             ; z' = z*cy - x*sy
+
+    movss xmm0, xmm3             ; x
+    movss xmm2, xmm6             ; z
+
+    ; x' = x*cz - y*sz
+    ; y' = x*sz + y*cz
+    movss xmm3, xmm0
+    mulss xmm3, xmm12            ; x*cz
+    movss xmm4, xmm1
+    mulss xmm4, xmm13            ; y*sz
+    subss xmm3, xmm4             ; x'
+
+    movss xmm5, xmm0
+    mulss xmm5, xmm13            ; x*sz
+    movss xmm6, xmm1
+    mulss xmm6, xmm12            ; y*cz
+    addss xmm5, xmm6             ; y'
+
+    movss xmm0, xmm3
+    movss xmm1, xmm5
+
+    ; Stocker x,y,z (toujours en float)
+    movss dword [rsi],   xmm0
+    movss dword [rsi+4], xmm1
+    movss dword [rsi+8], xmm2
+
+    add rsi, 12                 
+    dec rcx
+    jmp for_loop_rotation
 
 ; Boucle 3d to 2d 
 
+ici_v2:
 
+mov rsi, 0
 mov rsi, sommets ; tab 3d
 mov rdi, tab2d ; tab resutl 2d
 mov rcx,12 ; conteur 12 point
@@ -272,18 +358,17 @@ mov rcx,12 ; conteur 12 point
 loop_1:
     
     cmp rcx, 0
-    jle etape_aff
+    jle etape_affss
 
     movss xmm0, [rsi] ; x
     movss xmm1, [rsi+4] ; y
     movss xmm2, [rsi+8] ; z
 
-    ; charger les valeur
-
     movss xmm3, [df] ; df
     movss xmm4, [zoff] ;zoff
     movss xmm5, [xoff];xoff
     movss xmm6, [yoff];yoff
+    
     ; pour x
     addss xmm2, xmm4
 
@@ -293,7 +378,7 @@ loop_1:
 
     addss xmm0, xmm5
     ; pour y 
-    addss xmm2, xmm4 ; redondance pas utilme mais pour mieux comprendre si
+    ;addss xmm2, xmm4 ; a remove
 
     mulss xmm1, xmm3
 
@@ -317,19 +402,16 @@ etape_aff:
 ;tesssssssssssssssssssssssssssssssssssssssss
 
 
-; Dessiner les arêtes des faces (20 faces, 4 sommets chacune)
-xor r13d, r13d                 ; face index = 0
+mov r13, 0               
 for_loop_aff1:
-    cmp r13d, 20
+    cmp r13, 20
     jge ici
 
-    ; r10 = adresse base de la face courante (4 dwords)
     mov     r10, faces
     mov     eax, r13d
     imul    rax, 16
     add     r10, rax
 
-    ; Back-face culling calculé une fois par face, avec v0,v1,v2 projetés
     mov     eax, dword [r10]         ; v0
     imul    rax, 8
     movss   xmm0, dword [tab2d + rax]       ; x0
@@ -346,56 +428,50 @@ for_loop_aff1:
     movss   xmm5, dword [tab2d + rdx + 4]   ; y2
 
     ; cross = (x1-x0)*(y2-y0) - (y1-y0)*(x2-x0)
-    movaps  xmm6, xmm2
+    movss xmm6, xmm2
     subss   xmm6, xmm0
-    movaps  xmm7, xmm3
+    movss xmm7, xmm3
     subss   xmm7, xmm1
-    movaps  xmm2, xmm4
+    movss xmm2, xmm4
     subss   xmm2, xmm0
-    movaps  xmm3, xmm5
+    movss xmm3, xmm5
     subss   xmm3, xmm1
 
-    movaps  xmm4, xmm6
+    movss  xmm4, xmm6
     mulss   xmm4, xmm3
-    movaps  xmm5, xmm7
+    movss xmm5, xmm7
     mulss   xmm5, xmm2
     subss   xmm4, xmm5
     xorps   xmm5, xmm5 
     comiss  xmm4, xmm5
     jbe     next_face            
 
-    ; Face visible: boucler sur les 4 arêtes
-    xor r12d, r12d             ; edge index 0..3
+    mov r12, 0             
 for_loop_aff2:
-    cmp r12d, 4
+    cmp r12, 4
     jge next_face
 
-    ; v0 = faces[face*4 + r12]
     mov     eax, r12d
     mov     r11d, dword [r10 + rax*4]
 
-    ; v1 = faces[face*4 + ((r12+1) & 3)]
     lea     eax, [r12d+1]
     and     eax, 3
     mov     r14d, dword [r10 + rax*4]
 
-    ; lire coords projetées
     movss   xmm0, dword [tab2d + r11*8]       ; x1
     movss   xmm1, dword [tab2d + r11*8 + 4]   ; y1
     movss   xmm2, dword [tab2d + r14*8]       ; x2
     movss   xmm3, dword [tab2d + r14*8 + 4]   ; y2
 
-    ; floats -> ints
     cvttss2si ecx, xmm0       ; x1
     cvttss2si r8d, xmm1       ; y1
     cvttss2si r9d, xmm2       ; x2
-    cvttss2si r15d, xmm3      ; y2 (ne pas écraser r10 qui pointe la face)
+    cvttss2si r15d, xmm3      ; y2
 
-    ; appel XDrawLine(display, window, gc, x1, y1, x2, y2)
     mov     rdi, qword [display_name]
     mov     rsi, qword [window]
     mov     rdx, qword [gc]
-    push    r15                ; y2 (7e arg sur la pile)
+    push    r15               
     call    XDrawLine
     add     rsp, 8
 
@@ -409,18 +485,6 @@ next_face:
 
 ici:
  
-mov rcx, 12
-
-llop_aff_test:
-    cmp rcx, 0
-    jl fin
-    mov rdi, affxy
-    mov rsi, rcx
-    mov rax, 0
-    call printf
-    dec rcx
-    jmp llop_aff_test
-
 
 fin:
 mov esi,0 
