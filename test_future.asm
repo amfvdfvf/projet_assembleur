@@ -243,22 +243,15 @@ boucle: ; Boucle de gestion des événements
 ;#########################################
 
 
-
 dessin:
 
-;couleur de la ligne 1
-     ; 
 
-;couleur de la ligne 3
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
 mov edx,0x00FFFF
 call XSetForeground
 
-mov dword[x1],100
-mov dword[y1],100
-mov dword[x2],150
-mov dword[y2],150
+
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
@@ -269,107 +262,96 @@ push qword[y2]
 call XDrawLine
 pop rax 
 
-movss xmm8,  dword [cosinus + ANGLEX*DWORD]
-movss xmm9,  dword [sinus   + ANGLEX*DWORD]
-movss xmm10, dword [cosinus + ANGLEY*DWORD]
-movss xmm11, dword [sinus   + ANGLEY*DWORD]
-movss xmm12, dword [cosinus + ANGLEZ*DWORD]
-movss xmm13, dword [sinus   + ANGLEZ*DWORD]
+movss xmm8,  dword[cosinus + ANGLEX*DWORD]
+movss xmm9,  dword[sinus   + ANGLEX*DWORD]
+movss xmm10, dword[cosinus + ANGLEY*DWORD]
+movss xmm11, dword[sinus   + ANGLEY*DWORD]
+movss xmm12, dword[cosinus + ANGLEZ*DWORD]
+movss xmm13, dword[sinus   + ANGLEZ*DWORD]
 
 mov rsi, sommets     
 mov rcx, 12     
 
 for_loop_rotation:
-    test rcx, rcx
+    cmp rcx, 0
     jle ici_v2
 
-    movss xmm0, dword [rsi]      ; x
-    movss xmm1, dword [rsi+4]    ; y
-    movss xmm2, dword [rsi+8]    ; z
+    movss xmm0, dword[rsi]     
+    movss xmm1, dword[rsi+4]   
+    movss xmm2, dword[rsi+8]    
 
-    ; y' = y*cx - z*sx
-    ; z' = y*sx + z*cx
-    movss xmm3, xmm1             ; y
-    mulss xmm3, xmm8             ; y*cx
-    movss xmm4, xmm2             ; z
-    mulss xmm4, xmm9             ; z*sx
-    movss xmm5, xmm1             ; y
-    mulss xmm5, xmm9             ; y*sx
-    movss xmm6, xmm2             ; z
-    mulss xmm6, xmm8             ; z*cx
-    subss xmm3, xmm4             ; y'
-    addss xmm5, xmm6             ; z'
+    movss xmm3, xmm1              
+    mulss xmm3, xmm8            
+    movss xmm4, xmm2             
+    mulss xmm4, xmm9             
+    movss xmm5, xmm1             
+    mulss xmm5, xmm9             
+    movss xmm6, xmm2             
+    mulss xmm6, xmm8            
+    subss xmm3, xmm4             
+    addss xmm5, xmm6             
 
-    movss xmm1, xmm3             ; y = y'
-    movss xmm2, xmm5             ; z = z'
+    movss xmm1, xmm3             
+    movss xmm2, xmm5             
 
-    ; x' = x*cy + z*sy
-    ; z' = -x*sy + z*cy  == z*cy - x*sy
     movss xmm3, xmm0
-    mulss xmm3, xmm10            ; x*cy
+    mulss xmm3, xmm10            
     movss xmm4, xmm2
-    mulss xmm4, xmm11            ; z*sy
-    addss xmm3, xmm4             ; x'
+    mulss xmm4, xmm11           
+    addss xmm3, xmm4            
 
     movss xmm5, xmm0
-    mulss xmm5, xmm11            ; x*sy
+    mulss xmm5, xmm11           
     movss xmm6, xmm2
-    mulss xmm6, xmm10            ; z*cy
-    subss xmm6, xmm5             ; z' = z*cy - x*sy
+    mulss xmm6, xmm10           
+    subss xmm6, xmm5         
 
-    movss xmm0, xmm3             ; x
-    movss xmm2, xmm6             ; z
+    movss xmm0, xmm3            
+    movss xmm2, xmm6            
 
-    ; x' = x*cz - y*sz
-    ; y' = x*sz + y*cz
     movss xmm3, xmm0
-    mulss xmm3, xmm12            ; x*cz
+    mulss xmm3, xmm12            
     movss xmm4, xmm1
-    mulss xmm4, xmm13            ; y*sz
-    subss xmm3, xmm4             ; x'
+    mulss xmm4, xmm13            
+    subss xmm3, xmm4             
 
     movss xmm5, xmm0
-    mulss xmm5, xmm13            ; x*sz
+    mulss xmm5, xmm13           
     movss xmm6, xmm1
-    mulss xmm6, xmm12            ; y*cz
-    addss xmm5, xmm6             ; y'
+    mulss xmm6, xmm12            
+    addss xmm5, xmm6             
 
     movss xmm0, xmm3
     movss xmm1, xmm5
 
-    ; Stocker x,y,z (toujours en float)
-    movss dword [rsi],   xmm0
-    movss dword [rsi+4], xmm1
-    movss dword [rsi+8], xmm2
+    movss dword[rsi],   xmm0
+    movss dword[rsi+4], xmm1
+    movss dword[rsi+8], xmm2
 
     add rsi, 12                 
     dec rcx
     jmp for_loop_rotation
 
-; Boucle 3d to 2d 
-
 ici_v2:
 
 mov rsi, 0
-mov rsi, sommets ; tab 3d
-mov rdi, tab2d ; tab resutl 2d
-mov rcx,12 ; conteur 12 point
+mov rsi, sommets 
+mov rdi, tab2d 
+mov rcx,12 
 
 loop_1:
-    
     cmp rcx, 0
-    jle etape_affss
+    jle etape_aff
 
-    movss xmm0, [rsi] ; x
-    movss xmm1, [rsi+4] ; y
-    movss xmm2, [rsi+8] ; z
+    movss xmm0, [rsi] 
+    movss xmm1, [rsi+4] 
+    movss xmm2, [rsi+8] 
 
-    movss xmm3, [df] ; df
-    movss xmm4, [zoff] ;zoff
-    movss xmm5, [xoff];xoff
-    movss xmm6, [yoff];yoff
+    movss xmm3, [df] 
+    movss xmm4, [zoff] 
+    movss xmm5, [xoff]
+    movss xmm6, [yoff]
     
-    ; pour x
     addss xmm2, xmm4
 
     mulss xmm0, xmm3
@@ -377,8 +359,6 @@ loop_1:
     divss xmm0, xmm2
 
     addss xmm0, xmm5
-    ; pour y 
-    ;addss xmm2, xmm4 ; a remove
 
     mulss xmm1, xmm3
 
@@ -386,8 +366,8 @@ loop_1:
 
     addss xmm1, xmm6
 
-    movss [rdi], xmm0 ; tab2d = x
-    movss [rdi+4], xmm1 ; tab2d = y
+    movss [rdi], xmm0 
+    movss [rdi+4], xmm1 
 
     add rsi, 12
     add rdi, 8
@@ -397,10 +377,6 @@ loop_1:
     jmp loop_1
 
 etape_aff:
-;faire le code pour affihcer le patangoen avec les coodonée en 2d stp
-
-;tesssssssssssssssssssssssssssssssssssssssss
-
 
 mov r13, 0               
 for_loop_aff1:
@@ -412,65 +388,65 @@ for_loop_aff1:
     imul    rax, 16
     add     r10, rax
 
-    mov     eax, dword [r10]         ; v0
+    mov     eax, dword[r10]    
     imul    rax, 8
-    movss   xmm0, dword [tab2d + rax]       ; x0
-    movss   xmm1, dword [tab2d + rax + 4]   ; y0
+    movss   xmm0, dword[tab2d + rax]      
+    movss   xmm1, dword[tab2d + rax + 4]  
 
-    mov     ecx, dword [r10+4]       ; v1
+    mov     ecx, dword[r10+4]    
     imul    rcx, 8
-    movss   xmm2, dword [tab2d + rcx]       ; x1
-    movss   xmm3, dword [tab2d + rcx + 4]   ; y1
+    movss   xmm2, dword[tab2d + rcx]       
+    movss   xmm3, dword[tab2d + rcx + 4]   
 
-    mov     edx, dword [r10+8]       ; v2
+    mov     edx, dword[r10+8]   
     imul    rdx, 8
-    movss   xmm4, dword [tab2d + rdx]       ; x2
-    movss   xmm5, dword [tab2d + rdx + 4]   ; y2
+    movss   xmm4, dword[tab2d + rdx]      
+    movss   xmm5, dword[tab2d + rdx + 4]   
 
-    ; cross = (x1-x0)*(y2-y0) - (y1-y0)*(x2-x0)
     movss xmm6, xmm2
-    subss   xmm6, xmm0
+    subss xmm6, xmm0
     movss xmm7, xmm3
-    subss   xmm7, xmm1
+    subss xmm7, xmm1
     movss xmm2, xmm4
-    subss   xmm2, xmm0
+    subss xmm2, xmm0
     movss xmm3, xmm5
-    subss   xmm3, xmm1
+    subss xmm3, xmm1
 
     movss  xmm4, xmm6
-    mulss   xmm4, xmm3
-    movss xmm5, xmm7
-    mulss   xmm5, xmm2
-    subss   xmm4, xmm5
-    xorps   xmm5, xmm5 
-    comiss  xmm4, xmm5
-    jbe     next_face            
+    mulss  xmm4, xmm3
+    movss  xmm5, xmm7
+    mulss  xmm5, xmm2
+    subss  xmm4, xmm5
+    xorps  xmm5, xmm5 
+    comiss xmm4, xmm5
+    jbe    next_face            
 
-    mov r12, 0             
+    mov r12, 0
+
 for_loop_aff2:
     cmp r12, 4
     jge next_face
 
     mov     eax, r12d
-    mov     r11d, dword [r10 + rax*4]
+    mov     r11d, dword[r10 + rax*4]
 
     lea     eax, [r12d+1]
     and     eax, 3
-    mov     r14d, dword [r10 + rax*4]
+    mov     r14d, dword[r10 + rax*4]
 
-    movss   xmm0, dword [tab2d + r11*8]       ; x1
-    movss   xmm1, dword [tab2d + r11*8 + 4]   ; y1
-    movss   xmm2, dword [tab2d + r14*8]       ; x2
-    movss   xmm3, dword [tab2d + r14*8 + 4]   ; y2
+    movss   xmm0, dword[tab2d + r11*8]      
+    movss   xmm1, dword[tab2d + r11*8 + 4]   
+    movss   xmm2, dword[tab2d + r14*8]      
+    movss   xmm3, dword[tab2d + r14*8 + 4]   
 
-    cvttss2si ecx, xmm0       ; x1
-    cvttss2si r8d, xmm1       ; y1
-    cvttss2si r9d, xmm2       ; x2
-    cvttss2si r15d, xmm3      ; y2
+    cvttss2si ecx, xmm0       
+    cvttss2si r8d, xmm1       
+    cvttss2si r9d, xmm2       
+    cvttss2si r15d, xmm3      
 
-    mov     rdi, qword [display_name]
-    mov     rsi, qword [window]
-    mov     rdx, qword [gc]
+    mov     rdi, qword[display_name]
+    mov     rsi, qword[window]
+    mov     rdx, qword[gc]
     push    r15               
     call    XDrawLine
     add     rsp, 8
@@ -481,11 +457,9 @@ for_loop_aff2:
 next_face:
     inc r13d
     jmp for_loop_aff1
-;tessssssssssssssssssssssssssssssssssssssss
 
 ici:
  
-
 fin:
 mov esi,0 
 jmp flush
